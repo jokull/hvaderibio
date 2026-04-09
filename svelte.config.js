@@ -20,5 +20,8 @@ export default {
   preprocess: vitePreprocess(),
   kit: {
     adapter: await getAdapter(),
+    prerender: {
+      handleUnseenRoutes: "prerender",
+    },
   },
 };
