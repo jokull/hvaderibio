@@ -21,7 +21,7 @@ export default {
   kit: {
     adapter: await getAdapter(),
     prerender: {
-      handleUnseenRoutes: "prerender",
+      handleUnseenRoutes: "warn",
     },
   },
 };
