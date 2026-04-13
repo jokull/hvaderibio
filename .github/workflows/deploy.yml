@@ -18,6 +18,17 @@ jobs:
       - name: 📚 Install node dependencies
         run: bun install
 
+      - name: 🔐 Trust missing TLS intermediate for kvikmyndir.is
+        run: |
+          openssl s_client -connect www.kvikmyndir.is:443 -servername www.kvikmyndir.is -showcerts </dev/null 2>/dev/null \
+            | awk '/BEGIN CERTIFICATE/{flag=1} flag{print} /END CERTIFICATE/{exit}' > "$RUNNER_TEMP/kvikmyndir-leaf.pem"
+
+          issuer_url=$(openssl x509 -in "$RUNNER_TEMP/kvikmyndir-leaf.pem" -noout -text | awk -F'URI:' '/CA Issuers - URI:/{print $2; exit}')
+          curl -fsSL "$issuer_url" -o "$RUNNER_TEMP/kvikmyndir-issuer.der"
+          openssl x509 -inform DER -in "$RUNNER_TEMP/kvikmyndir-issuer.der" -out "$RUNNER_TEMP/kvikmyndir-issuer.pem"
+
+          echo "NODE_EXTRA_CA_CERTS=$RUNNER_TEMP/kvikmyndir-issuer.pem" >> "$GITHUB_ENV"
+
       - name: 🎬 Scrape movie data
         run: bun scrape
 
