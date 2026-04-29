@@ -1,0 +1,14 @@
+name: Check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  bun-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: oven-sh/setup-bun@main
+      - run: bun install --frozen-lockfile
+      - run: bun run check
