@@ -42,7 +42,12 @@
     dayState.set(day);
   };
 
-  const current_showtimes = $derived(movie.showtimes_by_day[selected_day] ?? {});
+  const visible_showtimes = $derived.by(() =>
+    Object.entries(movie.showtimes_by_day[selected_day] ?? {})
+      .filter(([cinema]) => selected_cinemas.includes(cinema))
+      .map(([cinema, times]) => ({ cinema, showtimes: get_valid_showtimes(times, selected_day, from, to) }))
+      .filter(({ showtimes }) => showtimes.length > 0)
+  );
 </script>
 
 <svelte:head>
@@ -170,14 +175,14 @@
       {/if}
 
       <!-- Showtimes -->
-      <div class="pt-2">
-        <div class="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div class="pt-2 md:max-w-3xl">
+        <div class="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
           <DayPicker {selected_day} onSelect={updateDay} containerClass="shrink-0" />
           {#if selected_choice !== DEFAULT_CINEMA_CHOICE}
             <button
               type="button"
               onclick={() => cinemaState.set(DEFAULT_CINEMA_CHOICE)}
-              class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] py-1 pr-1.5 pl-3 text-xs font-medium text-neutral-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-colors hover:bg-white/10 hover:text-white">
+              class="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] py-1 pr-1.5 pl-3 text-xs font-medium text-neutral-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-colors hover:bg-white/10 hover:text-white">
               <span class="max-w-[120px] truncate">{selected_choice}</span>
               <span class="flex h-4 w-4 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
                 <svg class="h-2.5 w-2.5 text-neutral-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -189,16 +194,17 @@
         </div>
 
         <!-- eslint-disable svelte/no-navigation-without-resolve -->
-        <div class="space-y-3 md:max-w-3xl">
-          {#each Object.entries(current_showtimes) as [cinema, times] (cinema)}
-            {#if selected_cinemas.includes(cinema)}
-              {@const validTimes = get_valid_showtimes(times, selected_day, from, to)}
-              {#if validTimes.length > 0}
-                <CinemaShowtimeRow {cinema} showtimes={validTimes} />
-              {/if}
-            {/if}
-          {/each}
-        </div>
+        {#if visible_showtimes.length > 0}
+          <div class="space-y-3">
+            {#each visible_showtimes as { cinema, showtimes } (cinema)}
+              <CinemaShowtimeRow {cinema} {showtimes} />
+            {/each}
+          </div>
+        {:else}
+          <div class="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-neutral-400">
+            Engar sýningar fundust fyrir þetta val.
+          </div>
+        {/if}
       </div>
     </div>
   </div>

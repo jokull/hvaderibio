@@ -20,11 +20,11 @@
         href={cinemaUrl}
         target="_blank"
         rel="external noopener noreferrer"
-        class="text-sm font-semibold text-neutral-200 transition-colors hover:text-white hover:underline hover:decoration-neutral-500 hover:underline-offset-4">
+        class="text-sm font-semibold text-neutral-200 transition-colors hover:text-white hover:underline hover:decoration-neutral-500 hover:underline-offset-4 md:text-base">
         {cinema}
       </a>
     {:else}
-      <span class="text-sm font-semibold text-neutral-200">{cinema}</span>
+      <span class="text-sm font-semibold text-neutral-200 md:text-base">{cinema}</span>
     {/if}
   </div>
 
@@ -34,9 +34,10 @@
         href={showtime.purchase_url}
         target="_blank"
         rel="external noopener noreferrer"
-        class="relative rounded bg-neutral-800 px-2 py-1.5 text-sm text-neutral-400 tabular-nums transition-colors hover:bg-neutral-700 hover:text-white">
+        class="group/time relative inline-flex items-center gap-1.5 rounded bg-neutral-800 px-2 py-1.5 text-sm text-neutral-400 tabular-nums transition-colors hover:bg-neutral-700 hover:text-white">
         <ShowtimeBadges {showtime} />
-        {new Date(showtime.time).toLocaleTimeString("is-IS", { timeStyle: "short", hour12: false })}
+        <span>{new Date(showtime.time).toLocaleTimeString("is-IS", { timeStyle: "short", hour12: false })}</span>
+        <span class="hidden text-[10px] font-medium text-neutral-500 group-hover/time:inline group-hover/time:text-neutral-300">Miðar</span>
       </a>
     {/each}
   </div>
