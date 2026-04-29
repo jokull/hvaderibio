@@ -1,19 +1,20 @@
 <script lang="ts">
-  import { in_range, to_float } from "$lib/util";
+  import { get_showtime_window, get_valid_showtimes } from "$lib/showtimes";
+  import { get_youtube_id, is_mobile_user_agent } from "$lib/video";
   import { DEFAULT_CINEMA_CHOICE, get_cinemas_for_choice, cinemaState } from "$lib/cinema-state.svelte";
-  import { CINEMA_URLS } from "$lib/constants";
   import { dayState } from "$lib/day-state.svelte";
   import DayPicker from "$lib/DayPicker.svelte";
+  import MovieRatings from "$lib/MovieRatings.svelte";
+  import CinemaShowtimeRow from "$lib/CinemaShowtimeRow.svelte";
 
   const { data } = $props();
   const movie = $derived(data.movie);
   const cinema_options = $derived(data.cinema_options);
 
   // Extract YouTube video ID from trailer URL
-  const youtube_id = $derived(movie.trailer_url?.match(/(?:v=|\/vi\/)([^&?/]+)/)?.[1]);
+  const youtube_id = $derived(get_youtube_id(movie.trailer_url));
 
-  const to = 24;
-  const from = Math.min(21, new Date().getHours());
+  const { from, to } = get_showtime_window();
 
   // Read cinema from shared state
   const selected_choice = $derived(cinemaState.value ?? DEFAULT_CINEMA_CHOICE);
@@ -24,8 +25,7 @@
   let trailer_modal_open = $state(false);
   const openTrailer = () => {
     // On mobile, open YouTube directly (autoplay doesn't work in iframe)
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile && youtube_id) {
+    if (is_mobile_user_agent() && youtube_id) {
       window.open(`https://www.youtube.com/watch?v=${youtube_id}`, "_blank");
     } else {
       trailer_modal_open = true;
@@ -132,113 +132,14 @@
             <span>·</span>
             <span>{movie.genres.slice(0, 2).join(", ")}</span>
           {/if}
-          <!-- Ratings inline on desktop -->
           <!-- eslint-disable svelte/no-navigation-without-resolve -->
-          {#if movie.imdb}
-            <span class="hidden md:inline">·</span>
-            <a
-              href={movie.imdb.link}
-              target="_blank"
-              rel="external noopener noreferrer"
-              class="hidden items-center gap-1 text-neutral-500 hover:text-white md:inline-flex">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32" width="28" height="14" class="fill-[#F5C518]">
-                <rect rx="3" width="64" height="32" />
-                <text x="32" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#000"
-                  >IMDb</text>
-              </svg>
-              <span>{movie.imdb.star}</span>
-            </a>
-          {/if}
-          {#if movie.rotten_tomatoes}
-            <span class="hidden md:inline">·</span>
-            <a
-              href={movie.rotten_tomatoes.url ??
-                `https://www.rottentomatoes.com/search?search=${encodeURIComponent(movie.alt_title || movie.title)}`}
-              target="_blank"
-              rel="external noopener noreferrer"
-              class="hidden items-center gap-1 text-neutral-500 hover:text-white md:inline-flex">
-              <img src="/rotten-tomatoes.svg" alt="RT" width="14" height="14" />
-              <span>{movie.rotten_tomatoes.score}%</span>
-            </a>
-          {/if}
-          {#if movie.metacritic}
-            <span class="hidden md:inline">·</span>
-            <a
-              href={movie.metacritic.url ?? `https://www.metacritic.com/search/${encodeURIComponent(movie.alt_title || movie.title)}/`}
-              target="_blank"
-              rel="external noopener noreferrer"
-              class="hidden items-center gap-1 text-neutral-500 hover:text-white md:inline-flex">
-              <img src="/metacritic.svg" alt="MC" width="14" height="14" />
-              <span>{movie.metacritic.score}</span>
-            </a>
-          {/if}
-          {#if movie.letterboxd?.score}
-            <span class="hidden md:inline">·</span>
-            <a
-              href={movie.letterboxd.url ?? `https://letterboxd.com/search/${encodeURIComponent(movie.alt_title || movie.title)}/`}
-              target="_blank"
-              rel="external noopener noreferrer"
-              class="hidden items-center gap-1 text-neutral-500 hover:text-white md:inline-flex">
-              <img src="/letterboxd.svg" alt="LB" width="14" height="14" />
-              <span>{movie.letterboxd.score}</span>
-            </a>
-          {/if}
+          <MovieRatings {movie} desktop />
         </div>
 
         <!-- Ratings row - mobile only -->
-        {#if movie.imdb || movie.rotten_tomatoes || movie.metacritic || movie.letterboxd}
+        {#if movie.imdb?.star || movie.rotten_tomatoes || movie.metacritic || movie.letterboxd?.score}
           <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500 md:hidden">
-            {#if movie.imdb}
-              <a
-                href={movie.imdb.link}
-                target="_blank"
-                rel="external noopener noreferrer"
-                class="inline-flex items-center gap-1 text-neutral-500 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32" width="28" height="14" class="fill-[#F5C518]">
-                  <rect rx="3" width="64" height="32" />
-                  <text x="32" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#000"
-                    >IMDb</text>
-                </svg>
-                <span>{movie.imdb.star}</span>
-              </a>
-            {/if}
-            {#if movie.rotten_tomatoes}
-              <a
-                href={movie.rotten_tomatoes.url ??
-                  `https://www.rottentomatoes.com/search?search=${encodeURIComponent(movie.alt_title || movie.title)}`}
-                target="_blank"
-                rel="external noopener noreferrer"
-                class="inline-flex items-center gap-1 text-neutral-500 hover:text-white">
-                <img src="/rotten-tomatoes.svg" alt="RT" width="14" height="14" />
-                <span>{movie.rotten_tomatoes.score}%</span>
-                {#if movie.rotten_tomatoes.audience_score}
-                  <span class="text-neutral-600">({movie.rotten_tomatoes.audience_score}%)</span>
-                {/if}
-              </a>
-            {/if}
-            {#if movie.metacritic}
-              <a
-                href={movie.metacritic.url ?? `https://www.metacritic.com/search/${encodeURIComponent(movie.alt_title || movie.title)}/`}
-                target="_blank"
-                rel="external noopener noreferrer"
-                class="inline-flex items-center gap-1 text-neutral-500 hover:text-white">
-                <img src="/metacritic.svg" alt="MC" width="14" height="14" />
-                <span>{movie.metacritic.score}</span>
-                {#if movie.metacritic.user_score}
-                  <span class="text-neutral-600">({movie.metacritic.user_score})</span>
-                {/if}
-              </a>
-            {/if}
-            {#if movie.letterboxd?.score}
-              <a
-                href={movie.letterboxd.url ?? `https://letterboxd.com/search/${encodeURIComponent(movie.alt_title || movie.title)}/`}
-                target="_blank"
-                rel="external noopener noreferrer"
-                class="inline-flex items-center gap-1 text-neutral-500 hover:text-white">
-                <img src="/letterboxd.svg" alt="LB" width="14" height="14" />
-                <span>{movie.letterboxd.score}</span>
-              </a>
-            {/if}
+            <MovieRatings {movie} />
           </div>
         {/if}
       </div>
@@ -276,9 +177,9 @@
             <button
               type="button"
               onclick={() => cinemaState.set(DEFAULT_CINEMA_CHOICE)}
-              class="inline-flex items-center gap-1.5 rounded-full bg-neutral-800 py-1 pr-1.5 pl-3 text-xs font-medium text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white">
+              class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] py-1 pr-1.5 pl-3 text-xs font-medium text-neutral-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-colors hover:bg-white/10 hover:text-white">
               <span class="max-w-[120px] truncate">{selected_choice}</span>
-              <span class="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-600 transition-colors hover:bg-neutral-500">
+              <span class="flex h-4 w-4 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
                 <svg class="h-2.5 w-2.5 text-neutral-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -288,65 +189,12 @@
         </div>
 
         <!-- eslint-disable svelte/no-navigation-without-resolve -->
-        <div class="space-y-5">
+        <div class="space-y-3 md:max-w-3xl">
           {#each Object.entries(current_showtimes) as [cinema, times] (cinema)}
             {#if selected_cinemas.includes(cinema)}
-              {@const validTimes = selected_day === "0" ? times.filter(({ time }) => time && in_range(to_float(time), from, to)) : times}
+              {@const validTimes = get_valid_showtimes(times, selected_day, from, to)}
               {#if validTimes.length > 0}
-                <div class="flex flex-col gap-1.5 md:grid md:grid-cols-[auto_1fr] md:items-baseline md:gap-x-3 md:gap-y-0">
-                  {#if CINEMA_URLS[cinema]}
-                    <a
-                      href={CINEMA_URLS[cinema]}
-                      target="_blank"
-                      rel="external noopener noreferrer"
-                      class="text-sm font-medium text-neutral-300 underline decoration-neutral-600 underline-offset-2 transition-colors hover:text-white hover:decoration-neutral-400"
-                      >{cinema}</a>
-                  {:else}
-                    <span class="text-sm font-medium text-neutral-300">{cinema}</span>
-                  {/if}
-                  <div class="flex flex-wrap gap-2">
-                    {#each validTimes as { time, purchase_url, is_icelandic, is_3d, is_luxus, is_vip, is_atmos, is_max, is_flauel }, i (`${time}-${i}`)}
-                      <a
-                        href={purchase_url}
-                        target="_blank"
-                        rel="external noopener noreferrer"
-                        class="relative rounded bg-neutral-800 px-2 py-1.5 text-sm text-neutral-400 tabular-nums transition-colors hover:bg-neutral-700 hover:text-white">
-                        {#if is_icelandic || is_3d || is_luxus || is_vip || is_atmos || is_max || is_flauel}
-                          <span class="absolute -top-1.5 -right-1.5 flex gap-0.5">
-                            {#if is_icelandic}
-                              <svg class="h-2.5 w-3" viewBox="0 0 25 18" fill="none">
-                                <rect width="25" height="18" fill="#003897" />
-                                <rect x="7" width="4" height="18" fill="#fff" />
-                                <rect y="7" width="25" height="4" fill="#fff" />
-                                <rect x="8" width="2" height="18" fill="#D72828" />
-                                <rect y="8" width="25" height="2" fill="#D72828" />
-                              </svg>
-                            {/if}
-                            {#if is_3d}
-                              <span class="rounded bg-blue-600 px-0.5 text-[8px] font-bold text-white">3D</span>
-                            {/if}
-                            {#if is_luxus}
-                              <span class="rounded bg-yellow-500 px-0.5 text-[8px] font-bold text-black">LÚX</span>
-                            {/if}
-                            {#if is_vip}
-                              <span class="rounded bg-emerald-600 px-0.5 text-[8px] font-bold text-white">VIP</span>
-                            {/if}
-                            {#if is_atmos}
-                              <span class="rounded bg-purple-600 px-0.5 text-[8px] font-bold text-white">ÁSBERG</span>
-                            {/if}
-                            {#if is_max}
-                              <span class="rounded bg-red-600 px-0.5 text-[8px] font-bold text-white">MAX</span>
-                            {/if}
-                            {#if is_flauel}
-                              <span class="rounded bg-pink-500 px-0.5 text-[8px] font-bold text-white">FLAUEL</span>
-                            {/if}
-                          </span>
-                        {/if}
-                        {new Date(time).toLocaleTimeString("is-IS", { timeStyle: "short", hour12: false })}
-                      </a>
-                    {/each}
-                  </div>
-                </div>
+                <CinemaShowtimeRow {cinema} showtimes={validTimes} />
               {/if}
             {/if}
           {/each}
