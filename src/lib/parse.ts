@@ -83,7 +83,7 @@ export function parse_movie(document: Document, id: number) {
   }
 
   // Ratings from hero section
-  let imdb: { link: string; star: number } | undefined;
+  let imdb: { link: string; star?: number } | undefined;
   let rotten_tomatoes: { score: number } | undefined;
   let metacritic: { score: number } | undefined;
 
@@ -95,17 +95,17 @@ export function parse_movie(document: Document, id: number) {
 
     if (img?.alt?.toLowerCase().includes("imdb")) {
       const star = parseFloat(scoreText);
-      if (!isNaN(star) && link) {
-        imdb = { link, star };
+      if (link) {
+        imdb = Number.isFinite(star) && star > 0 ? { link, star } : { link };
       }
     } else if (img?.alt?.toLowerCase().includes("rotten")) {
       const score = parseInt(scoreText.replace("%", ""));
-      if (!isNaN(score)) {
+      if (Number.isFinite(score) && score > 0) {
         rotten_tomatoes = { score };
       }
     } else if (img?.alt?.toLowerCase().includes("metacritic")) {
       const score = parseInt(scoreText);
-      if (!isNaN(score)) {
+      if (Number.isFinite(score) && score > 0) {
         metacritic = { score };
       }
     }
@@ -115,7 +115,7 @@ export function parse_movie(document: Document, id: number) {
   if (!imdb) {
     const imdbLink = document.querySelector<HTMLAnchorElement>("a.mp-external-links__item[href*='imdb.com']");
     if (imdbLink) {
-      imdb = { link: imdbLink.href, star: 0 };
+      imdb = { link: imdbLink.href };
     }
   }
 
@@ -340,6 +340,43 @@ export function parse_hall_info_from_listing(document: Document): Map<string, Ha
   });
 
   return hallInfoMap;
+}
+
+export type ImdbRating = { star: number; votes: number };
+
+// Fetch IMDb ratings from IMDb's public dataset. This avoids relying on the
+// kvikmyndir.is rating widget, which can be stale or missing and previously
+// caused us to persist placeholder 0 ratings from IMDb links.
+export async function fetch_imdb_ratings(imdbIds: readonly string[]): Promise<Map<string, ImdbRating>> {
+  const ids = new Set(imdbIds);
+  const ratings = new Map<string, ImdbRating>();
+  if (ids.size === 0) return ratings;
+
+  const response = await fetch("https://datasets.imdbws.com/title.ratings.tsv.gz", {
+    headers: { "User-Agent": "hvaderibio/1.0" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch IMDb ratings dataset: ${response.status} ${response.statusText}`);
+  }
+
+  const { gunzipSync } = await import("node:zlib");
+  const tsv = gunzipSync(Buffer.from(await response.arrayBuffer())).toString("utf8");
+
+  for (const line of tsv.split("\n").slice(1)) {
+    if (ratings.size === ids.size) break;
+
+    const [id, averageRating, numVotes] = line.split("\t");
+    if (!ids.has(id)) continue;
+
+    const star = parseFloat(averageRating);
+    const votes = parseInt(numVotes);
+    if (Number.isFinite(star) && star > 0 && Number.isFinite(votes)) {
+      ratings.set(id, { star, votes });
+    }
+  }
+
+  return ratings;
 }
 
 // Fetch RT, Metacritic, and Letterboxd URLs from Wikidata using IMDb ID

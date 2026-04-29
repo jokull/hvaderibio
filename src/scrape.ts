@@ -15,6 +15,7 @@ import {
   scrape_rotten_tomatoes,
   scrape_metacritic,
   scrape_letterboxd,
+  fetch_imdb_ratings,
   type HallInfo,
 } from "$lib/parse";
 
@@ -238,7 +239,11 @@ async function main() {
     }
   }
 
-  console.log(`Scraped ${movies.length} valid movies. Fetching external URLs and scores...`);
+  const imdbIds = movies.flatMap((movie) => movie.imdb?.link.match(/tt\d+/)?.[0] ?? []);
+  console.log(`Scraped ${movies.length} valid movies. Fetching IMDb ratings for ${imdbIds.length} movies...`);
+  const imdbRatings = await fetch_imdb_ratings(imdbIds);
+
+  console.log(`Fetched ${imdbRatings.size} IMDb ratings. Fetching external URLs and scores...`);
 
   // Fetch RT, Metacritic, and Letterboxd URLs from Wikidata, then scrape scores
   const moviesWithUrls = await Promise.all(
@@ -247,6 +252,9 @@ async function main() {
 
       const imdbId = movie.imdb.link.match(/tt\d+/)?.[0];
       if (!imdbId) return movie;
+
+      const imdbRating = imdbRatings.get(imdbId);
+      const imdb = imdbRating ? { ...movie.imdb, star: imdbRating.star } : movie.imdb?.star ? movie.imdb : undefined;
 
       await delay(100); // Rate limit Wikidata requests
       const { rtUrl, mcUrl, letterboxdUrl } = await fetch_external_urls(imdbId);
@@ -307,6 +315,7 @@ async function main() {
 
       return {
         ...movie,
+        imdb,
         rotten_tomatoes,
         metacritic,
         letterboxd,

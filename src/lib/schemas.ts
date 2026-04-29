@@ -40,7 +40,7 @@ export const movie_schema = z.object({
   imdb: z.optional(
     z.object({
       link: z.url(),
-      star: z.number(),
+      star: z.optional(z.number()),
     })
   ),
   rotten_tomatoes: z.optional(
