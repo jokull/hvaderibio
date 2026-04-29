@@ -34,10 +34,13 @@
         href={showtime.purchase_url}
         target="_blank"
         rel="external noopener noreferrer"
-        class="group/time relative inline-flex items-center gap-1.5 rounded bg-neutral-800 px-2 py-1.5 text-sm text-neutral-400 tabular-nums transition-colors hover:bg-neutral-700 hover:text-white">
+        class="group/time relative inline-flex items-center rounded bg-neutral-800 px-2 py-1.5 text-sm text-neutral-400 tabular-nums transition-colors hover:bg-neutral-700 hover:text-white">
         <ShowtimeBadges {showtime} />
         <span>{new Date(showtime.time).toLocaleTimeString("is-IS", { timeStyle: "short", hour12: false })}</span>
-        <span class="hidden text-[10px] font-medium text-neutral-500 group-hover/time:inline group-hover/time:text-neutral-300">Miðar</span>
+        <span
+          class="pointer-events-none absolute bottom-full left-1/2 mb-1.5 hidden -translate-x-1/2 rounded bg-neutral-950/95 px-2 py-1 text-[10px] font-medium whitespace-nowrap text-neutral-300 opacity-0 shadow-lg transition-opacity group-hover/time:opacity-100 [@media(hover:hover)]:block">
+          Kaupa miða
+        </span>
       </a>
     {/each}
   </div>
