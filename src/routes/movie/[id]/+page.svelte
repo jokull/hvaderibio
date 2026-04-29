@@ -3,6 +3,7 @@
   import { DEFAULT_CINEMA_CHOICE, get_cinemas_for_choice, cinemaState } from "$lib/cinema-state.svelte";
   import { CINEMA_URLS } from "$lib/constants";
   import { dayState } from "$lib/day-state.svelte";
+  import DayPicker from "$lib/DayPicker.svelte";
 
   const { data } = $props();
   const movie = $derived(data.movie);
@@ -21,9 +22,6 @@
   // Day selection from shared state
   const selected_day = $derived(dayState.value ?? "0");
   let trailer_modal_open = $state(false);
-  // Always show days 0-3 for consistent UI
-  const available_days = ["0", "1", "2", "3"];
-
   const openTrailer = () => {
     // On mobile, open YouTube directly (autoplay doesn't work in iframe)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -40,38 +38,8 @@
     document.body.style.overflow = "";
   };
 
-  // Day selector slider
-  let day_buttons: HTMLButtonElement[] = $state([]);
-  let slider_style = $state("width: 0; left: 0; opacity: 0;");
-  let slider_animated = $state(false);
-
-  $effect(() => {
-    const idx = parseInt(selected_day);
-    const btn = day_buttons[idx];
-    if (btn) {
-      slider_style = `width: ${btn.offsetWidth}px; left: ${btn.offsetLeft}px; opacity: 1;`;
-      // Enable animation after first position is set
-      if (!slider_animated) {
-        requestAnimationFrame(() => {
-          slider_animated = true;
-        });
-      }
-    }
-  });
-
   const updateDay = (day: string) => {
     dayState.set(day);
-  };
-
-  const get_day_label = (day: string) => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const date = new Date();
-    date.setDate(date.getDate() + parseInt(day));
-    if (day === "0") return "Í dag";
-    if (day === "1") return "Á morgun";
-    const d = date.getDate();
-    const month = date.toLocaleDateString("is-IS", { month: "short" }).toLowerCase().replace(".", "");
-    return `${d}. ${month}`;
   };
 
   const current_showtimes = $derived(movie.showtimes_by_day[selected_day] ?? {});
@@ -301,110 +269,89 @@
       {/if}
 
       <!-- Showtimes -->
-      {#if available_days.length > 0}
-        <div class="pt-2">
-          <div class="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div class="relative flex shrink-0 items-center rounded-full bg-neutral-800 p-1">
-              <!-- Sliding indicator -->
-              <div
-                class="absolute h-[calc(100%-10px)] rounded-full bg-white shadow-sm {slider_animated
-                  ? 'transition-all duration-300 ease-out'
-                  : ''}"
-                style={slider_style}>
-              </div>
-              {#each available_days as day, i (day)}
-                <button
-                  bind:this={day_buttons[i]}
-                  type="button"
-                  onclick={() => updateDay(day)}
-                  class="relative z-10 rounded-full px-2 py-1 text-xs font-medium transition-colors duration-200 {selected_day === day
-                    ? 'text-neutral-900'
-                    : 'text-neutral-400 hover:text-neutral-200'}">
-                  {get_day_label(day)}
-                </button>
-              {/each}
-            </div>
-            {#if selected_choice !== DEFAULT_CINEMA_CHOICE}
-              <button
-                type="button"
-                onclick={() => cinemaState.set(DEFAULT_CINEMA_CHOICE)}
-                class="inline-flex items-center gap-1.5 rounded-full bg-neutral-800 py-1 pr-1.5 pl-3 text-xs font-medium text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white">
-                <span class="max-w-[120px] truncate">{selected_choice}</span>
-                <span class="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-600 transition-colors hover:bg-neutral-500">
-                  <svg class="h-2.5 w-2.5 text-neutral-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </span>
-              </button>
-            {/if}
-          </div>
+      <div class="pt-2">
+        <div class="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <DayPicker {selected_day} onSelect={updateDay} containerClass="shrink-0" />
+          {#if selected_choice !== DEFAULT_CINEMA_CHOICE}
+            <button
+              type="button"
+              onclick={() => cinemaState.set(DEFAULT_CINEMA_CHOICE)}
+              class="inline-flex items-center gap-1.5 rounded-full bg-neutral-800 py-1 pr-1.5 pl-3 text-xs font-medium text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-white">
+              <span class="max-w-[120px] truncate">{selected_choice}</span>
+              <span class="flex h-4 w-4 items-center justify-center rounded-full bg-neutral-600 transition-colors hover:bg-neutral-500">
+                <svg class="h-2.5 w-2.5 text-neutral-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </span>
+            </button>
+          {/if}
+        </div>
 
-          <!-- eslint-disable svelte/no-navigation-without-resolve -->
-          <div class="space-y-5">
-            {#each Object.entries(current_showtimes) as [cinema, times] (cinema)}
-              {#if selected_cinemas.includes(cinema)}
-                {@const validTimes = selected_day === "0" ? times.filter(({ time }) => time && in_range(to_float(time), from, to)) : times}
-                {#if validTimes.length > 0}
-                  <div class="flex flex-col gap-1.5 md:grid md:grid-cols-[auto_1fr] md:items-baseline md:gap-x-3 md:gap-y-0">
-                    {#if CINEMA_URLS[cinema]}
+        <!-- eslint-disable svelte/no-navigation-without-resolve -->
+        <div class="space-y-5">
+          {#each Object.entries(current_showtimes) as [cinema, times] (cinema)}
+            {#if selected_cinemas.includes(cinema)}
+              {@const validTimes = selected_day === "0" ? times.filter(({ time }) => time && in_range(to_float(time), from, to)) : times}
+              {#if validTimes.length > 0}
+                <div class="flex flex-col gap-1.5 md:grid md:grid-cols-[auto_1fr] md:items-baseline md:gap-x-3 md:gap-y-0">
+                  {#if CINEMA_URLS[cinema]}
+                    <a
+                      href={CINEMA_URLS[cinema]}
+                      target="_blank"
+                      rel="external noopener noreferrer"
+                      class="text-sm font-medium text-neutral-300 underline decoration-neutral-600 underline-offset-2 transition-colors hover:text-white hover:decoration-neutral-400"
+                      >{cinema}</a>
+                  {:else}
+                    <span class="text-sm font-medium text-neutral-300">{cinema}</span>
+                  {/if}
+                  <div class="flex flex-wrap gap-2">
+                    {#each validTimes as { time, purchase_url, is_icelandic, is_3d, is_luxus, is_vip, is_atmos, is_max, is_flauel }, i (`${time}-${i}`)}
                       <a
-                        href={CINEMA_URLS[cinema]}
+                        href={purchase_url}
                         target="_blank"
                         rel="external noopener noreferrer"
-                        class="text-sm font-medium text-neutral-300 underline decoration-neutral-600 underline-offset-2 transition-colors hover:text-white hover:decoration-neutral-400"
-                        >{cinema}</a>
-                    {:else}
-                      <span class="text-sm font-medium text-neutral-300">{cinema}</span>
-                    {/if}
-                    <div class="flex flex-wrap gap-2">
-                      {#each validTimes as { time, purchase_url, is_icelandic, is_3d, is_luxus, is_vip, is_atmos, is_max, is_flauel }, i (`${time}-${i}`)}
-                        <a
-                          href={purchase_url}
-                          target="_blank"
-                          rel="external noopener noreferrer"
-                          class="relative rounded bg-neutral-800 px-2 py-1.5 text-sm text-neutral-400 tabular-nums transition-colors hover:bg-neutral-700 hover:text-white">
-                          {#if is_icelandic || is_3d || is_luxus || is_vip || is_atmos || is_max || is_flauel}
-                            <span class="absolute -top-1.5 -right-1.5 flex gap-0.5">
-                              {#if is_icelandic}
-                                <svg class="h-2.5 w-3" viewBox="0 0 25 18" fill="none">
-                                  <rect width="25" height="18" fill="#003897" />
-                                  <rect x="7" width="4" height="18" fill="#fff" />
-                                  <rect y="7" width="25" height="4" fill="#fff" />
-                                  <rect x="8" width="2" height="18" fill="#D72828" />
-                                  <rect y="8" width="25" height="2" fill="#D72828" />
-                                </svg>
-                              {/if}
-                              {#if is_3d}
-                                <span class="rounded bg-blue-600 px-0.5 text-[8px] font-bold text-white">3D</span>
-                              {/if}
-                              {#if is_luxus}
-                                <span class="rounded bg-yellow-500 px-0.5 text-[8px] font-bold text-black">LÚX</span>
-                              {/if}
-                              {#if is_vip}
-                                <span class="rounded bg-emerald-600 px-0.5 text-[8px] font-bold text-white">VIP</span>
-                              {/if}
-                              {#if is_atmos}
-                                <span class="rounded bg-purple-600 px-0.5 text-[8px] font-bold text-white">ÁSBERG</span>
-                              {/if}
-                              {#if is_max}
-                                <span class="rounded bg-red-600 px-0.5 text-[8px] font-bold text-white">MAX</span>
-                              {/if}
-                              {#if is_flauel}
-                                <span class="rounded bg-pink-500 px-0.5 text-[8px] font-bold text-white">FLAUEL</span>
-                              {/if}
-                            </span>
-                          {/if}
-                          {new Date(time).toLocaleTimeString("is-IS", { timeStyle: "short", hour12: false })}
-                        </a>
-                      {/each}
-                    </div>
+                        class="relative rounded bg-neutral-800 px-2 py-1.5 text-sm text-neutral-400 tabular-nums transition-colors hover:bg-neutral-700 hover:text-white">
+                        {#if is_icelandic || is_3d || is_luxus || is_vip || is_atmos || is_max || is_flauel}
+                          <span class="absolute -top-1.5 -right-1.5 flex gap-0.5">
+                            {#if is_icelandic}
+                              <svg class="h-2.5 w-3" viewBox="0 0 25 18" fill="none">
+                                <rect width="25" height="18" fill="#003897" />
+                                <rect x="7" width="4" height="18" fill="#fff" />
+                                <rect y="7" width="25" height="4" fill="#fff" />
+                                <rect x="8" width="2" height="18" fill="#D72828" />
+                                <rect y="8" width="25" height="2" fill="#D72828" />
+                              </svg>
+                            {/if}
+                            {#if is_3d}
+                              <span class="rounded bg-blue-600 px-0.5 text-[8px] font-bold text-white">3D</span>
+                            {/if}
+                            {#if is_luxus}
+                              <span class="rounded bg-yellow-500 px-0.5 text-[8px] font-bold text-black">LÚX</span>
+                            {/if}
+                            {#if is_vip}
+                              <span class="rounded bg-emerald-600 px-0.5 text-[8px] font-bold text-white">VIP</span>
+                            {/if}
+                            {#if is_atmos}
+                              <span class="rounded bg-purple-600 px-0.5 text-[8px] font-bold text-white">ÁSBERG</span>
+                            {/if}
+                            {#if is_max}
+                              <span class="rounded bg-red-600 px-0.5 text-[8px] font-bold text-white">MAX</span>
+                            {/if}
+                            {#if is_flauel}
+                              <span class="rounded bg-pink-500 px-0.5 text-[8px] font-bold text-white">FLAUEL</span>
+                            {/if}
+                          </span>
+                        {/if}
+                        {new Date(time).toLocaleTimeString("is-IS", { timeStyle: "short", hour12: false })}
+                      </a>
+                    {/each}
                   </div>
-                {/if}
+                </div>
               {/if}
-            {/each}
-          </div>
+            {/if}
+          {/each}
         </div>
-      {/if}
+      </div>
     </div>
   </div>
 </div>

@@ -6,24 +6,11 @@
   import type { Movie, Showtime } from "$lib/schemas";
   import { DEFAULT_CINEMA_CHOICE, get_cinemas_for_choice, cinemaState } from "$lib/cinema-state.svelte";
   import { dayState } from "$lib/day-state.svelte";
+  import DayPicker from "$lib/DayPicker.svelte";
 
   const { data } = $props();
   const movies = $derived(data.movies);
   const cinema_options = $derived(data.cinema_options);
-
-  // Always show days 0-3 for consistent UI
-  const available_days = ["0", "1", "2", "3"];
-
-  const get_day_label = (day: string) => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const date = new Date();
-    date.setDate(date.getDate() + parseInt(day));
-    if (day === "0") return "Í dag";
-    if (day === "1") return "Á morgun";
-    const d = date.getDate();
-    const month = date.toLocaleDateString("is-IS", { month: "short" }).toLowerCase().replace(".", "");
-    return `${d}. ${month}`;
-  };
 
   // Handle touch events to bypass iOS Safari tap issues
   let touchStartY = 0;
@@ -55,38 +42,6 @@
   const selected_choice = $derived(cinemaState.value ?? DEFAULT_CINEMA_CHOICE);
   const selected_cinemas = $derived(get_cinemas_for_choice(selected_choice, cinema_options));
   const selected_day = $derived(dayState.value ?? "0");
-
-  // Day selector slider (desktop)
-  let day_buttons: HTMLButtonElement[] = $state([]);
-  let slider_style = $state("width: 0; left: 0; opacity: 0;");
-  let slider_animated = $state(false);
-
-  // Day selector slider (mobile)
-  let day_buttons_mobile: HTMLButtonElement[] = $state([]);
-  let slider_style_mobile = $state("width: 0; left: 0; opacity: 0;");
-  let slider_animated_mobile = $state(false);
-
-  $effect(() => {
-    const idx = parseInt(selected_day);
-    const btn = day_buttons[idx];
-    if (btn) {
-      slider_style = `width: ${btn.offsetWidth}px; left: ${btn.offsetLeft}px; opacity: 1;`;
-      if (!slider_animated) {
-        requestAnimationFrame(() => {
-          slider_animated = true;
-        });
-      }
-    }
-    const btnMobile = day_buttons_mobile[idx];
-    if (btnMobile) {
-      slider_style_mobile = `width: ${btnMobile.offsetWidth}px; left: ${btnMobile.offsetLeft}px; opacity: 1;`;
-      if (!slider_animated_mobile) {
-        requestAnimationFrame(() => {
-          slider_animated_mobile = true;
-        });
-      }
-    }
-  });
 
   const updateCinema = (choiceLabel: string) => {
     cinemaState.set(choiceLabel);
@@ -139,20 +94,22 @@
   <meta name="description" content="Fljótlegt yfirlit yfir bíódagskrá kvöldsins á öllu landinu. Skoðaðu sýningartíma og bókaðu miða." />
 </svelte:head>
 
-<header class="relative hidden sm:my-8 sm:block">
-  <h1 class="mb-4 text-center text-5xl tracking-tight text-pretty" style="font-family: 'Space Grotesk', sans-serif;">Hvað er í bíó? 🍿</h1>
-  <div class="mx-auto sm:block md:max-w-2xl lg:max-w-3xl">
+<header class="relative hidden sm:mt-8 sm:mb-5 sm:block">
+  <h1 class="mb-3 text-center text-5xl tracking-tight text-pretty text-white" style="font-family: 'Space Grotesk', sans-serif;">
+    Hvað er í bíó?
+  </h1>
+  <div class="mx-auto sm:block md:max-w-none">
     <!-- Cinema selection -->
-    <div class="mb-5 flex flex-wrap justify-center gap-1.5 md:gap-2">
+    <div class="mb-3 flex flex-nowrap justify-center gap-1.5 overflow-x-auto px-2 md:gap-2">
       {#each cinema_options as [label] (label)}
         <button
           type="button"
           onclick={() => updateCinema(label)}
-          class={`rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200 ease-out focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-neutral-900 focus:outline-none
+          class={`shrink-0 rounded-xl border px-3.5 py-1.5 text-[15px] leading-5 font-medium whitespace-nowrap transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900
                     ${
                       label === selected_choice
-                        ? "bg-opacity-15 bg-neutral-800/30 text-white shadow-sm"
-                        : "bg-neutral-800/60 text-neutral-400 hover:bg-neutral-700/80 hover:text-neutral-200"
+                        ? "border-sky-300/50 bg-neutral-950 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_0_0_1px_rgba(125,211,252,0.28),0_0_18px_rgba(56,189,248,0.14),0_8px_24px_rgba(0,0,0,0.35)]"
+                        : "border-transparent bg-neutral-800/60 text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
                     }
                   `}>
           {label}
@@ -161,33 +118,14 @@
     </div>
     <!-- Day selection -->
     <div class="flex justify-center">
-      <div class="relative flex items-center rounded-full bg-neutral-800 p-1">
-        <!-- Sliding indicator -->
-        <div
-          class="absolute h-[calc(100%-10px)] rounded-full bg-white shadow-sm {slider_animated
-            ? 'transition-all duration-300 ease-out'
-            : ''}"
-          style={slider_style}>
-        </div>
-        {#each available_days as day, i (day)}
-          <button
-            bind:this={day_buttons[i]}
-            type="button"
-            onclick={() => updateDay(day)}
-            class="relative z-10 rounded-full px-2 py-1 text-xs font-medium transition-colors duration-200 {selected_day === day
-              ? 'text-neutral-900'
-              : 'text-neutral-400 hover:text-neutral-200'}">
-            {get_day_label(day)}
-          </button>
-        {/each}
-      </div>
+      <DayPicker {selected_day} onSelect={updateDay} />
     </div>
   </div>
 </header>
 
 <header class="relative">
-  <div class="fixed inset-x-0 bottom-0 z-40 w-full px-4 pb-4 sm:hidden">
-    <div class="flex flex-col gap-2">
+  <div class="fixed inset-x-0 bottom-0 z-40 flex w-full justify-center px-4 pb-3 sm:hidden">
+    <div class="flex flex-col items-center gap-2">
       <!-- Cinema dropdown -->
       <div class="flex justify-center">
         <div class="relative">
@@ -197,7 +135,7 @@
             id="select-cinemas-mobile"
             name="select cinemas mobile"
             aria-label="Veldu kvikmyndahús"
-            class="appearance-none rounded-full border border-neutral-700/50 bg-neutral-900/95 py-2 pr-8 pl-4 text-center text-sm text-neutral-100 shadow-lg focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 focus:outline-none">
+            class="appearance-none rounded-full border border-white/10 bg-black/70 py-1 pr-8 pl-8 text-center text-sm font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_4px_14px_rgba(0,0,0,0.26)] focus:border-sky-300/40 focus:ring-2 focus:ring-sky-300/15 focus:outline-none">
             {#each cinema_options as [label] (label)}
               <option
                 value={label}
@@ -211,7 +149,7 @@
           </select>
           <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
             <svg
-              class="h-4 w-4 text-neutral-400"
+              class="h-4 w-4 text-neutral-300/80"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -226,26 +164,7 @@
       </div>
       <!-- Day pills -->
       <div class="flex justify-center">
-        <div class="relative flex items-center rounded-full bg-neutral-800/90 p-1">
-          <!-- Sliding indicator -->
-          <div
-            class="absolute h-[calc(100%-10px)] rounded-full bg-white shadow-md {slider_animated_mobile
-              ? 'transition-all duration-300 ease-out'
-              : ''}"
-            style={slider_style_mobile}>
-          </div>
-          {#each available_days as day, i (day)}
-            <button
-              bind:this={day_buttons_mobile[i]}
-              type="button"
-              onclick={() => updateDay(day)}
-              class="relative z-10 rounded-full px-2 py-1.5 text-xs font-medium transition-colors duration-200 {selected_day === day
-                ? 'text-neutral-900'
-                : 'text-neutral-400'}">
-              {get_day_label(day)}
-            </button>
-          {/each}
-        </div>
+        <DayPicker {selected_day} onSelect={updateDay} buttonClass="py-1.25" />
       </div>
     </div>
   </div>
@@ -258,7 +177,7 @@
   </div>
 {:else}
   <div
-    class="md:md-30 -mx-1 mb-24 grid grid-cols-[repeat(auto-fill,minmax(min(9rem,100%),2fr))] gap-4 sm:mx-0 sm:mb-8 sm:grid-cols-[repeat(auto-fill,minmax(min(20rem,100%),2fr))] sm:gap-6 sm:pt-4">
+    class="md:md-30 -mx-1 mb-24 grid grid-cols-[repeat(auto-fill,minmax(min(9rem,100%),2fr))] gap-4 sm:mx-0 sm:mb-8 sm:grid-cols-[repeat(auto-fill,minmax(min(20rem,100%),2fr))] sm:gap-6 sm:pt-2">
     {#each filtered_cinemas_showtimes as movie, index (movie.id)}
       {@const handlers = createTouchHandlers(`/movie/${movie.id}`)}
       <div
