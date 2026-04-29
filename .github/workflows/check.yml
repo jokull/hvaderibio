@@ -11,4 +11,5 @@ jobs:
       - uses: actions/checkout@main
       - uses: oven-sh/setup-bun@main
       - run: bun install --frozen-lockfile
+      - run: mkdir -p static && echo '[]' > static/movies.json
       - run: bun run check
