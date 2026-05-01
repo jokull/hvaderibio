@@ -11,8 +11,21 @@ export const is_valid_showtime = (showtime: Showtime, selected_day: string, from
   return Boolean(showtime.time && in_range(to_float(showtime.time), from, to));
 };
 
-export const get_valid_showtimes = (showtimes: readonly Showtime[], selected_day: string, from: number, to: number) =>
-  showtimes.filter((showtime) => is_valid_showtime(showtime, selected_day, from, to));
+const get_showtime_key = (showtime: Showtime) => `${showtime.time}-${showtime.purchase_url}`;
+
+export const get_valid_showtimes = (showtimes: readonly Showtime[], selected_day: string, from: number, to: number) => {
+  const seen = new Set<string>();
+
+  return showtimes.filter((showtime) => {
+    if (!is_valid_showtime(showtime, selected_day, from, to)) return false;
+
+    const key = get_showtime_key(showtime);
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+};
 
 export const count_movie_showtimes = (
   movie: Movie,
