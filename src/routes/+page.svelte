@@ -51,7 +51,7 @@
     <CinemaTabs cinemaOptions={cinema_options} selectedChoice={selected_choice} onSelect={updateCinema} />
     <!-- Day selection -->
     <div class="flex justify-center">
-      <DayPicker {selected_day} onSelect={updateDay} />
+      <DayPicker selectedDay={selected_day} onSelect={updateDay} />
     </div>
   </div>
 </header>
@@ -65,7 +65,7 @@
       </div>
       <!-- Day pills -->
       <div class="flex justify-center">
-        <DayPicker {selected_day} onSelect={updateDay} buttonClass="py-1.25" />
+        <DayPicker selectedDay={selected_day} onSelect={updateDay} size="sm" />
       </div>
     </div>
   </div>

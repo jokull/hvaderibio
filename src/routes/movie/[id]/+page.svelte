@@ -3,6 +3,7 @@
   import { get_youtube_id, is_mobile_user_agent } from "$lib/video";
   import { DEFAULT_CINEMA_CHOICE, get_cinemas_for_choice, cinemaState } from "$lib/cinema-state.svelte";
   import { dayState } from "$lib/day-state.svelte";
+  import CinemaSelect from "$lib/CinemaSelect.svelte";
   import DayPicker from "$lib/DayPicker.svelte";
   import MovieRatings from "$lib/MovieRatings.svelte";
   import CinemaShowtimeRow from "$lib/CinemaShowtimeRow.svelte";
@@ -42,6 +43,10 @@
     dayState.set(day);
   };
 
+  const updateCinema = (choice: string) => {
+    cinemaState.set(choice);
+  };
+
   const visible_showtimes = $derived.by(() =>
     Object.entries(movie.showtimes_by_day[selected_day] ?? {})
       .filter(([cinema]) => selected_cinemas.includes(cinema))
@@ -54,7 +59,7 @@
   <link rel="preload" as="image" href="/{movie.id}-360w.webp" fetchpriority="high" />
 </svelte:head>
 
-<div class="container mx-auto max-w-7xl py-4 md:px-8 md:py-8 lg:px-12 lg:py-10">
+<div class="container mx-auto max-w-7xl py-4 pb-28 md:px-8 md:py-8 lg:px-12 lg:py-10">
   <button
     type="button"
     onclick={() => history.back()}
@@ -176,21 +181,14 @@
 
       <!-- Showtimes -->
       <div class="pt-2 md:max-w-3xl">
-        <div class="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <DayPicker {selected_day} onSelect={updateDay} containerClass="shrink-0" />
-          {#if selected_choice !== DEFAULT_CINEMA_CHOICE}
-            <button
-              type="button"
-              onclick={() => cinemaState.set(DEFAULT_CINEMA_CHOICE)}
-              class="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] py-1 pr-1.5 pl-3 text-xs font-medium text-neutral-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition-colors hover:bg-white/10 hover:text-white">
-              <span class="max-w-[120px] truncate">{selected_choice}</span>
-              <span class="flex h-4 w-4 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25">
-                <svg class="h-2.5 w-2.5 text-neutral-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </span>
-            </button>
-          {/if}
+        <div class="mb-5 hidden flex-wrap items-center gap-x-3 gap-y-2 sm:flex">
+          <DayPicker selectedDay={selected_day} onSelect={updateDay} shrink />
+          <CinemaSelect
+            cinemaOptions={cinema_options}
+            selectedChoice={selected_choice}
+            onSelect={updateCinema}
+            id="select-cinemas-movie-desktop"
+            size="sm" />
         </div>
 
         <!-- eslint-disable svelte/no-navigation-without-resolve -->
@@ -206,6 +204,21 @@
           </div>
         {/if}
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-x-0 bottom-0 z-40 flex w-full justify-center px-4 pb-3 sm:hidden">
+  <div class="flex flex-col items-center gap-2">
+    <div class="flex justify-center">
+      <CinemaSelect
+        cinemaOptions={cinema_options}
+        selectedChoice={selected_choice}
+        onSelect={updateCinema}
+        id="select-cinemas-movie-mobile" />
+    </div>
+    <div class="flex justify-center">
+      <DayPicker selectedDay={selected_day} onSelect={updateDay} size="sm" />
     </div>
   </div>
 </div>
