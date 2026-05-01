@@ -5,9 +5,12 @@
     cinemaOptions: readonly CinemaOption[];
     selectedChoice: string;
     onSelect: (choice: string) => void;
+    id?: string;
+    size?: "sm" | "md";
   };
 
-  const { cinemaOptions, selectedChoice, onSelect }: Props = $props();
+  const { cinemaOptions, selectedChoice, onSelect, id = "select-cinemas", size = "md" }: Props = $props();
+  const sizeClass = $derived(size === "sm" ? "min-h-8 py-1 text-xs" : "py-1 text-sm");
 
   const handleChange = (event: Event & { currentTarget: HTMLSelectElement }) => {
     onSelect(event.currentTarget.value);
@@ -18,10 +21,10 @@
   <select
     value={selectedChoice}
     onchange={handleChange}
-    id="select-cinemas-mobile"
-    name="select cinemas mobile"
+    {id}
+    name={id}
     aria-label="Veldu kvikmyndahús"
-    class="appearance-none rounded-full border border-white/10 bg-black/70 py-1 pr-8 pl-8 text-center text-sm font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_4px_14px_rgba(0,0,0,0.26)] focus:border-sky-300/40 focus:ring-2 focus:ring-sky-300/15 focus:outline-none">
+    class="appearance-none rounded-full border border-white/10 bg-black/70 pr-8 pl-8 text-center font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_4px_14px_rgba(0,0,0,0.26)] focus:border-sky-300/40 focus:ring-2 focus:ring-sky-300/15 focus:outline-none {sizeClass}">
     {#each cinemaOptions as [label] (label)}
       <option
         value={label}
