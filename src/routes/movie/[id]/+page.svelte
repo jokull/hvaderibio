@@ -74,7 +74,7 @@
     <div class="w-full md:mx-0">
       <!-- Mobile: Show trailer thumbnail if available, otherwise poster -->
       {#if youtube_id}
-        <div class="aspect-video overflow-hidden rounded-md bg-neutral-900 md:hidden">
+        <div class="animate-media-enter aspect-video overflow-hidden rounded-md bg-neutral-900 md:hidden">
           <button type="button" onclick={openTrailer} class="group relative h-full w-full cursor-pointer">
             <img
               src="https://img.youtube.com/vi/{youtube_id}/hqdefault.jpg"
@@ -108,11 +108,11 @@
             loading="eager"
             decoding="async"
             style:view-transition-name="poster-{movie.id}"
-            class="w-full rounded-md shadow-2xl" />
+            class="animate-media-enter w-full rounded-md shadow-2xl" />
         </picture>
       {/if}
       <!-- Desktop: Always show poster -->
-      <picture class="hidden md:block">
+      <picture class="animate-media-enter hidden md:block">
         <source type="image/webp" srcset={`/${movie.id}-360w.webp 360w, /${movie.id}.webp 720w`} sizes="(max-width: 768px) 192px, 320px" />
         <img
           src={`/${movie.id}.webp`}
@@ -158,7 +158,7 @@
 
       <!-- Trailer (desktop only - mobile shows in hero position) -->
       {#if youtube_id}
-        <div class="hidden aspect-video overflow-hidden rounded-md bg-neutral-900 md:block">
+        <div class="animate-media-enter hidden aspect-video overflow-hidden rounded-md bg-neutral-900 md:block">
           <button type="button" onclick={openTrailer} class="group relative h-full w-full cursor-pointer">
             <img
               src="https://img.youtube.com/vi/{youtube_id}/hqdefault.jpg"
@@ -192,23 +192,25 @@
         </div>
 
         <!-- eslint-disable svelte/no-navigation-without-resolve -->
-        {#if visible_showtimes.length > 0}
-          <div class="space-y-3">
-            {#each visible_showtimes as { cinema, showtimes } (cinema)}
-              <CinemaShowtimeRow {cinema} {showtimes} />
-            {/each}
-          </div>
-        {:else}
-          <div class="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-neutral-400">
-            Engar sýningar fundust fyrir þetta val.
-          </div>
-        {/if}
+        {#key `${selected_day}-${selected_choice}`}
+          {#if visible_showtimes.length > 0}
+            <div class="animate-fade-slide space-y-3">
+              {#each visible_showtimes as { cinema, showtimes } (cinema)}
+                <CinemaShowtimeRow {cinema} {showtimes} />
+              {/each}
+            </div>
+          {:else}
+            <div class="animate-fade-in rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-neutral-400">
+              Engar sýningar fundust fyrir þetta val.
+            </div>
+          {/if}
+        {/key}
       </div>
     </div>
   </div>
 </div>
 
-<div class="fixed inset-x-0 bottom-0 z-40 flex w-full justify-center px-4 pb-3 sm:hidden">
+<div class="animate-slide-up fixed inset-x-0 bottom-0 z-40 flex w-full justify-center px-4 pb-3 sm:hidden">
   <div class="flex flex-col items-center gap-2">
     <div class="flex justify-center">
       <CinemaSelect
