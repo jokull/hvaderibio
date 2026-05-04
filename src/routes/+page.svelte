@@ -57,7 +57,7 @@
 </header>
 
 <header class="relative">
-  <div class="fixed inset-x-0 bottom-0 z-40 flex w-full justify-center px-4 pb-3 sm:hidden">
+  <div class="animate-slide-up fixed inset-x-0 bottom-0 z-40 flex w-full justify-center px-4 pb-3 sm:hidden">
     <div class="flex flex-col items-center gap-2">
       <!-- Cinema dropdown -->
       <div class="flex justify-center">
@@ -71,16 +71,18 @@
   </div>
 </header>
 
-{#if filtered_cinemas_showtimes.length === 0}
-  <div class="flex flex-col items-center justify-center py-16 text-center">
-    <p class="text-lg text-neutral-400">Engar sýningar fundust</p>
-    <p class="mt-1 text-sm text-neutral-500">Prófaðu að velja annan dag eða kvikmyndahús</p>
-  </div>
-{:else}
-  <div
-    class="md:md-30 -mx-1 mb-24 grid grid-cols-[repeat(auto-fill,minmax(min(9rem,100%),2fr))] gap-4 sm:mx-0 sm:mb-8 sm:grid-cols-[repeat(auto-fill,minmax(min(20rem,100%),2fr))] sm:gap-6 sm:pt-2">
-    {#each filtered_cinemas_showtimes as movie, index (movie.id)}
-      <MoviePosterCard {movie} {index} />
-    {/each}
-  </div>
-{/if}
+{#key `${selected_day}-${selected_choice}`}
+  {#if filtered_cinemas_showtimes.length === 0}
+    <div class="animate-fade-in flex flex-col items-center justify-center py-16 text-center">
+      <p class="text-lg text-neutral-400">Engar sýningar fundust</p>
+      <p class="mt-1 text-sm text-neutral-500">Prófaðu að velja annan dag eða kvikmyndahús</p>
+    </div>
+  {:else}
+    <div
+      class="animate-fade-slide md:md-30 -mx-1 mb-24 grid grid-cols-[repeat(auto-fill,minmax(min(9rem,100%),2fr))] gap-4 sm:mx-0 sm:mb-8 sm:grid-cols-[repeat(auto-fill,minmax(min(20rem,100%),2fr))] sm:gap-6 sm:pt-2">
+      {#each filtered_cinemas_showtimes as movie, index (movie.id)}
+        <MoviePosterCard {movie} {index} />
+      {/each}
+    </div>
+  {/if}
+{/key}
