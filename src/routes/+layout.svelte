@@ -1,6 +1,7 @@
 <script lang="ts">
   import "../app.css";
   import { onNavigate } from "$app/navigation";
+  import Dust from "$lib/Dust.svelte";
 
   let { children } = $props();
 
@@ -33,4 +34,7 @@
   <link rel="dns-prefetch" href="https://www.smarabio.is" />
 </svelte:head>
 
-{@render children()}
+<Dust />
+<div class="relative z-10">
+  {@render children()}
+</div>
